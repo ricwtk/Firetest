@@ -1,5 +1,6 @@
 package com.richardwtk.firetest;
 
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -31,20 +32,37 @@ public class MainActivity extends AppCompatActivity {
         // Obtain the FirebaseAnalytics instance.
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         mAuth = FirebaseAuth.getInstance();
+        mAuth.addAuthStateListener(new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                updateUI(firebaseAuth.getCurrentUser());
+            }
+        });
 
         final Button log_in_button = findViewById(R.id.loginbtn);
         log_in_button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Bundle bundle = new Bundle();
                 bundle.putString(FirebaseAnalytics.Param.ITEM_ID, getResources().getResourceEntryName(v.getId()));
-                mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.ADD_TO_WISHLIST, bundle);
+                mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.LOGIN, bundle);
             }
         });
 
-        final Button sign_up_button = findViewById(R.id.signupbtn);
-        sign_up_button.setOnClickListener(new View.OnClickListener(){
+        findViewById(R.id.signupbtn).setOnClickListener(new View.OnClickListener(){
             public void onClick(View v) {
                 signUp();
+            }
+        });
+
+        findViewById(R.id.loginbtn).setOnClickListener(new View.OnClickListener(){
+            public void onClick(View v) {
+                logIn();
+            }
+        });
+
+        findViewById(R.id.log_out_button).setOnClickListener(new View.OnClickListener(){
+            public void onClick(View v) {
+                logOut();
             }
         });
     }
@@ -60,32 +78,73 @@ public class MainActivity extends AppCompatActivity {
     private void updateUI(FirebaseUser user) {
         final TextView displaytext = findViewById(R.id.textdisplay);
         if (user != null) displaytext.setText(user.getEmail());
+        else displaytext.setText(R.string.defaulttextdisplay);
     }
 
     private void signUp() {
-        final EditText emailtext = findViewById(R.id.emailtext);
-        final EditText passwordtext = findViewById(R.id.passwdtext);
-        final TextView displaytext = findViewById(R.id.textdisplay);
+        final String emailtext = ((EditText) findViewById(R.id.emailtext)).getText().toString();
+        final String passwordtext = ((EditText) findViewById(R.id.passwdtext)).getText().toString();
 
-        mAuth.createUserWithEmailAndPassword(emailtext.getText().toString(), passwordtext.getText().toString())
-            .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                @Override
-                public void onComplete(@NonNull Task<AuthResult> task) {
+        if (emailtext.isEmpty()) {
+            Toast.makeText(MainActivity.this, R.string.no_email_text, Toast.LENGTH_SHORT).show();
+        } else if (passwordtext.isEmpty()) {
+            Toast.makeText(MainActivity.this, R.string.no_password_text, Toast.LENGTH_SHORT).show();
+        } else {
+            mAuth.createUserWithEmailAndPassword(emailtext, passwordtext)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
                     if (task.isSuccessful()) {
                         // Sign in success, update UI with the signed-in user's information
-                        Log.d("firetest", "createUserWithEmail:success");
-                        FirebaseUser user = mAuth.getCurrentUser();
-                        updateUI(user);
+                        Log.d(MainActivity.this.getLocalClassName(), "createUserWithEmail:success");
+                        //                        FirebaseUser user = mAuth.getCurrentUser();
+                        //                        updateUI(user);
                     } else {
                         // If sign in fails, display a message to the user.
-                        Log.w("firetest", "createUserWithEmail:failure", task.getException());
-                        Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
-                        updateUI(null);
+                        Log.w(MainActivity.this.getLocalClassName(), "createUserWithEmail:failure", task.getException());
+                        Toast.makeText(MainActivity.this, task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        //                        updateUI(null);
                     }
 
                     // ...
-                }
-            });
+                    }
+                });
+        }
     }
 
+    private void logIn() {
+        final String emailtext = ((EditText) findViewById(R.id.emailtext)).getText().toString();
+        final String passwordtext = ((EditText) findViewById(R.id.passwdtext)).getText().toString();
+
+        if (emailtext.isEmpty()) {
+            Toast.makeText(MainActivity.this, R.string.no_email_text, Toast.LENGTH_SHORT).show();
+        } else if (passwordtext.isEmpty()) {
+            Toast.makeText(MainActivity.this, R.string.no_password_text, Toast.LENGTH_SHORT).show();
+        } else {
+            mAuth.signInWithEmailAndPassword(emailtext, passwordtext)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            // Sign in success, update UI with the signed-in user's information
+                            Log.d(MainActivity.this.getLocalClassName(), "signInWithEmail:success");
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            updateUI(user);
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            Log.w(MainActivity.this.getLocalClassName(), "signInWithEmail:failure", task.getException());
+                            Toast.makeText(MainActivity.this, task.getException().getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                            updateUI(null);
+                        }
+
+                        // ...
+                    }
+                });
+        }
+    }
+
+    private void logOut() {
+        mAuth.signOut();
+    }
 }

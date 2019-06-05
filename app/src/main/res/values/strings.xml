@@ -1,4 +1,11 @@
 <resources>
     <string name="app_name">Firetest</string>
-    <string name="button">Button</string>
+    <string name="login">Log in</string>
+    <string name="log_out_button">Log out</string>
+    <string name="signup">Sign up</string>
+    <string name="emailhint">Email</string>
+    <string name="passwordhint">Password</string>
+    <string name="defaulttextdisplay">Hello world</string>
+    <string name="no_email_text">Please provide an email address</string>
+    <string name="no_password_text">Please provide a password</string>
 </resources>
